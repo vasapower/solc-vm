@@ -17,18 +17,15 @@ const getBinaryDirectory = function () {
 };
 
 const getInstalledVersion = function () {
-  if (!fs.existsSync(binaryDirectory)) {
+  if (!fs.existsSync(getBinaryDirectory())) {
     return [];
   }
   let files = fs.readdirSync(binaryDirectory);
   const binFiles = files.filter((item) => {
-    if (osType.startsWith('windows')) {
-      return item.match(/^(solc-\d+\.\d+\.\d+.exe)$/);
-    }
-    return item.match(/^(solc-\d+\.\d+\.\d+)$/);
+    return item.match(/^(solc-\d+\.\d+\.\d+)$/) || item.match(/^(solc-\d+\.\d+\.\d+.exe)$/);
   });
   const versions = binFiles.map((item) => {
-    if (osType.startsWith('windows')) {
+    if (item.endsWith(".exe")) {
       return item.substring(5, item.length - 4);
     }
     return item.substring(5, item.length);
@@ -48,8 +45,16 @@ function binaryName (version) {
   return 'solc-' + version;
 }
 
-function getBinary (version) {
-  return path.join(binaryDirectory, binaryName(version));
+function getBinary(version) {
+  var binaryLocation = path.join(binaryDirectory, binaryName(version));
+  if(osType.startsWith("windows") && hasBinaryVersion(version) && !fs.existsSync(binaryLocation)) {
+    binaryLocation = path.join(binaryDirectory, `solc-${version}`, "solc.exe");
+  }
+  return binaryLocation;
 }
 
-module.exports = { getBinaryDirectory, getInstalledVersion, binaryName, removeBinary, getBinary };
+function hasBinaryVersion(version) {
+  return getInstalledVersion().filter(it => it.toLowerCase().indexOf(version) !== -1).length > 0;
+}
+
+module.exports = { getBinaryDirectory, hasBinaryVersion, getInstalledVersion, binaryName, removeBinary, getBinary };
